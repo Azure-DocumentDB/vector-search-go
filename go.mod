@@ -1,4 +1,4 @@
-module documentdb-vector-samples
+module github.com/Azure-DocumentDB/vector-search-go
 
 go 1.24.0
 
