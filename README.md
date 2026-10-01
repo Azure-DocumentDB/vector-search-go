@@ -55,12 +55,12 @@ go mod download
 ### 4. Run only against the approved disposable environment
 
 ```powershell
-go run .\src\ivf.go .\src\utils.go
-go run .\src\hnsw.go .\src\utils.go
-go run .\src\diskann.go .\src\utils.go
+go run ./cmd/ivf
+go run ./cmd/hnsw
+go run ./cmd/diskann
 ```
 
-Run each independent program with `src\utils.go` as shown; compiling every `src` file into one program would duplicate `main`. Optional embedding generation: `go run .\src\create_embeddings.go .\src\utils.go`.
+Each sample is its own command under `cmd/`, sharing helpers from `internal/documentdb`, so `go build ./...` and `go vet ./...` work on the whole repository. Optional embedding generation: `go run ./cmd/create-embeddings`. To inspect existing indexes: `go run ./cmd/show-indexes`.
 
 ## Shared provisioning
 

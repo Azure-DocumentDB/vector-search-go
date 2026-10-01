@@ -12,8 +12,35 @@
 Source is at repository root. The README is rewritten for that layout, and placeholder-only configuration/data setup replaces reliance on the parent checkout.
 - Adapted source file: `.env.example`
 - Adapted source file: `README.md`
-- Adapted source file: `src/create_embeddings.go`
-- Adapted source file: `src/utils.go`
+- Adapted source file: `cmd/create-embeddings/main.go` (upstream `src/create_embeddings.go`)
+- Adapted source file: `internal/documentdb/documentdb.go` (upstream `src/utils.go`)
+
+### Go layout restructure (2026-10-01)
+
+Upstream keeps five `package main` files plus a shared `utils.go` in one `src/`
+directory, which is valid only when each program is compiled with an explicit file
+list (`go run src/ivf.go src/utils.go`). In a standalone repository that layout makes
+`go build ./...` and `go vet ./...` fail with `main redeclared in this block`, so
+ordinary Go tooling and CI cannot inspect the repository.
+
+The programs were moved to one command directory each, with the shared helpers in an
+internal package:
+
+- `src/ivf.go` to `cmd/ivf/main.go`
+- `src/hnsw.go` to `cmd/hnsw/main.go`
+- `src/diskann.go` to `cmd/diskann/main.go`
+- `src/create_embeddings.go` to `cmd/create-embeddings/main.go`
+- `src/show_indexes.go` to `cmd/show-indexes/main.go`
+- `src/utils.go` to `internal/documentdb/documentdb.go` (package `documentdb`)
+
+The only source change is reference qualification: helpers are now called through the
+`documentdb` package, and the previously unexported `getEnvOrDefault` is exported as
+`GetEnvOrDefault` because it is used from `cmd/create-embeddings`. No vector search
+logic, index parameters, dependency versions, or algorithm behavior were modified.
+
+`go build ./...` now exits 0 and all five commands compile. `go vet ./...` still
+reports pre-existing `primitive.E struct literal uses unkeyed fields` warnings that are
+inherited from upstream and intentionally left unchanged.
 
 Hotel fixtures are not redistributed: [data/README.md](data/README.md) pins the original input locations and checksums. Saved output, Learn-only quickstart pages, and devcontainer automation are omitted. Shared infrastructure and root monorepo CI are not copied.
 
