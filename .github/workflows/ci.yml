@@ -1,0 +1,42 @@
+name: Go checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Local checks (Go ${{ matrix.go }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ['1.24.12', 'stable']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+      - name: Formatting
+        run: test -z "$(gofmt -l cmd internal)"
+      - name: Build
+        run: go build ./...
+      - name: Unit and local mock contracts (no Azure calls)
+        run: go test -race -count=1 ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Verify live gate refuses missing opt-in
+        shell: bash
+        run: |
+          if VECTOR_SEARCH_LIVE_TEST= go test -tags=integration ./internal/documentdb -run '^TestLiveAlgorithms$' -count=1 >live-gate.log 2>&1; then
+            echo 'Live gate unexpectedly accepted a missing opt-in'
+            exit 1
+          fi
+          grep -q 'requires VECTOR_SEARCH_LIVE_TEST=1; no network calls made' live-gate.log
