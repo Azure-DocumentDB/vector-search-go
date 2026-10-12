@@ -202,3 +202,35 @@ func TestMongoWorkflowMocks(t *testing.T) {
 		}
 	})
 }
+
+func TestSearchResultPresenceAndScores(t *testing.T) {
+	mt := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock).CreateCollection(false))
+	cases := []struct {
+		name  string
+		doc   bson.D
+		valid bool
+	}{
+		{"missing_score", bson.D{{Key: "document", Value: bson.M{"_id": "1"}}}, false},
+		{"null_score", bson.D{{Key: "document", Value: bson.M{"_id": "1"}}, {Key: "score", Value: nil}}, false},
+		{"missing_id", bson.D{{Key: "document", Value: bson.M{"name": "hotel"}}, {Key: "score", Value: 1.0}}, false},
+		{"null_id", bson.D{{Key: "document", Value: bson.M{"_id": nil}}, {Key: "score", Value: 1.0}}, false},
+		{"zero_score", bson.D{{Key: "document", Value: bson.M{"_id": "1"}}, {Key: "score", Value: 0.0}}, true},
+		{"negative_score", bson.D{{Key: "document", Value: bson.M{"_id": "1"}}, {Key: "score", Value: -0.5}}, true},
+		{"integer_zero_score", bson.D{{Key: "document", Value: bson.M{"_id": "1"}}, {Key: "score", Value: int32(0)}}, true},
+	}
+	for _, tc := range cases {
+		mt.Run(tc.name, func(mt *mtest.T) {
+			c := configFixture(mt.T)
+			c.Dimensions = 2
+			mt.AddMockResponses(mtest.CreateCursorResponse(0, "test.coll", mtest.FirstBatch, tc.doc))
+			result, err := Search(context.Background(), mt.Coll, c, []float64{1, 0})
+			if tc.valid {
+				if err != nil || len(result) != 1 {
+					mt.Fatalf("legitimate cosine result rejected: %v", err)
+				}
+			} else if err == nil {
+				mt.Fatal("malformed result accepted")
+			}
+		})
+	}
+}

@@ -83,6 +83,18 @@ new upstream revision. The exact original source revision above remains authorit
 Unit/mock success does not certify real Azure authentication, tier support, model
 availability, or semantic behavior; live evidence must state its tested mode and scope.
 
+### Credential-destination and result-contract follow-up (2026-10-12)
+
+Independent release review identified overly broad HTTPS-only model endpoint validation.
+Embedding clients now accept only documented single-resource `.openai.azure.com` origins
+on default port 443, validate before credential construction, and refuse every HTTP
+redirect. Regression tests exercise production API-key/Entra client wiring using fake
+credentials and an in-process HTTP transport, with no DNS or network calls. Unsupported
+Azure endpoint families and custom gateways are intentionally rejected, not inferred safe.
+Search results now require an explicitly numeric, non-null score and present non-null
+`_id`; valid zero/negative cosine scores remain accepted. Wire mocks cover those contracts.
+These fixes do not establish live Azure OpenAI availability or semantic behavior.
+
 ## Maintenance
 
 There is no automatic synchronization. Review upstream changes against this pinned baseline, apply only relevant fixes, retain notices, and record the imported revision and local adaptations here.

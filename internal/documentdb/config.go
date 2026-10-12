@@ -16,6 +16,9 @@ var namePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]{0,79}$`)
 var databasePattern = regexp.MustCompile(`^vectorsearch_disposable(_[a-z0-9_]+)?$`)
 var azureHostPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*\.(global\.)?mongocluster\.cosmos\.azure\.com$`)
 
+// Only the documented Azure OpenAI resource origin is supported, not arbitrary gateways.
+var azureOpenAIHostPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.openai\.azure\.com$`)
+
 type Config struct {
 	AuthMode, Host, ConnectionString, OIDCUsername string
 	DatabaseName, CollectionPrefix, CollectionName string
@@ -135,8 +138,10 @@ func (c Config) Validate() error {
 
 func validateOpenAI(c Config) error {
 	u, err := url.Parse(c.OpenAIEndpoint)
-	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") {
-		return fmt.Errorf("AZURE_OPENAI_EMBEDDING_ENDPOINT must be an HTTPS resource origin")
+	if err != nil || u.Scheme != "https" || !azureOpenAIHostPattern.MatchString(u.Hostname()) ||
+		(u.Host != u.Hostname() && u.Host != u.Hostname()+":443") ||
+		u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.RawPath != "" || (u.Path != "" && u.Path != "/") {
+		return fmt.Errorf("AZURE_OPENAI_EMBEDDING_ENDPOINT must be https://<resource>.openai.azure.com with no path or query and default port 443")
 	}
 	if c.ModelName == "" || strings.ContainsAny(c.ModelName, "<>\r\n") {
 		return fmt.Errorf("AZURE_OPENAI_EMBEDDING_MODEL must name your deployed embedding model")

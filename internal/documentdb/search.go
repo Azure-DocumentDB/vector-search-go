@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -149,6 +150,12 @@ func Search(ctx context.Context, collection *mongo.Collection, c Config, vector 
 	defer cursor.Close(ctx)
 	var results []SearchResult
 	for cursor.Next(ctx) {
+		// Decoding absent/null into float64 would silently produce a valid-
+		// looking zero score. Require a numeric BSON field before decoding.
+		score := cursor.Current.Lookup("score")
+		if score.Type != bsontype.Double && score.Type != bsontype.Int32 && score.Type != bsontype.Int64 {
+			return nil, errors.New("vector search result requires a numeric score")
+		}
 		var result SearchResult
 		if err := cursor.Decode(&result); err != nil {
 			return nil, protect("decode vector results", err)
@@ -162,7 +169,8 @@ func Search(ctx context.Context, collection *mongo.Collection, c Config, vector 
 		return nil, errors.New("vector search returned more than top K")
 	}
 	for _, result := range results {
-		if len(result.Document) == 0 || math.IsNaN(result.Score) || math.IsInf(result.Score, 0) {
+		id, hasID := result.Document["_id"]
+		if !hasID || id == nil || math.IsNaN(result.Score) || math.IsInf(result.Score, 0) {
 			return nil, errors.New("invalid vector search result")
 		}
 	}

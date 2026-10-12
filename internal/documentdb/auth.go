@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -113,17 +114,34 @@ func Disconnect(client *mongo.Client) error {
 
 // NewEmbeddingClient is deliberately independent of MongoDB authentication.
 func NewEmbeddingClient(c Config) (openai.Client, error) {
+	return newEmbeddingClient(c, http.DefaultTransport, func() (azcore.TokenCredential, error) {
+		return azidentity.NewDefaultAzureCredential(nil)
+	})
+}
+
+// Dependency injection is private and only used by no-network tests. Endpoint
+// validation and redirect policy cannot be replaced by callers or environment.
+func newEmbeddingClient(c Config, transport http.RoundTripper, credentialFactory func() (azcore.TokenCredential, error)) (openai.Client, error) {
 	if c.EmbeddingMode != "azure-openai" {
 		return openai.Client{}, errors.New("OpenAI disabled outside azure-openai mode")
 	}
 	if err := validateOpenAI(c); err != nil {
 		return openai.Client{}, err
 	}
-	opts := []option.RequestOption{option.WithBaseURL(strings.TrimRight(c.OpenAIEndpoint, "/") + "/openai/v1/")}
+	httpClient := &http.Client{
+		Transport: transport,
+		// Never forward any credential to a redirect destination, even a same-
+		// host or HTTPS target. The caller receives a non-success response.
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
+	opts := []option.RequestOption{
+		option.WithBaseURL(strings.TrimRight(c.OpenAIEndpoint, "/") + "/openai/v1/"),
+		option.WithHTTPClient(httpClient),
+	}
 	if c.OpenAIKey != "" {
 		opts = append(opts, option.WithAPIKey(c.OpenAIKey))
 	} else {
-		credential, err := azidentity.NewDefaultAzureCredential(nil)
+		credential, err := credentialFactory()
 		if err != nil {
 			return openai.Client{}, protect("Azure embedding credential initialization", err)
 		}
