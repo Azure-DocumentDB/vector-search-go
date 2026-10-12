@@ -23,11 +23,12 @@ Fixture: 50 pinned hotel records, 1,536-dimensional vectors. The query was the f
 
 All three actual command-line programs were exercised with both auth modes. Scoped `show-indexes` returned the expected algorithm parameters. Wrong native credentials, disabled writes, an unsafe `Hotels` database target, and requested TLS bypass each failed with a nonzero process exit without printing credentials.
 
-The tested implementation before this documentation-only record was commit `64120c4b00260546abd5e6cf2de06b33f50c0ad3`.
+The initial implementation validation used commit `64120c4b00260546abd5e6cf2de06b33f50c0ad3`. After dependency security updates, the native/Entra and all three algorithm gates were repeated on a newly provisioned disposable M30 cluster using commit `e72cf6039d6c49518a61216e46095d744942abba`, Go 1.26.9, and MongoDB Go driver 1.17.9. Both passes succeeded; the public release uses the patched dependencies.
 
 ## Local checks
 
-- Build, race-enabled tests and `go vet` passed on the local tested Go toolchains (1.24.12 and 1.26.1).
+- Final build, race-enabled tests and `go vet` passed on Go 1.26.9. Earlier compatibility checks used Go 1.24.12 and 1.26.1, but these older toolchains are not the release recommendation. Patched dependencies now require Go 1.26; the module selects Go 1.26.9 and CI also checks the current stable release.
+- `govulncheck` v1.9.0 found zero reachable vulnerabilities and zero vulnerable imported packages after updating the MongoDB driver to 1.17.9 and the networking/text dependencies. Two advisories remain in dependency-module packages this sample doesn't import (`openpgp` and `s2`); they are not represented as a zero-advisory transitive dependency graph. CI repeats the reachable-code scan.
 - Final suite: 30 top-level tests / 125 passing test events including subtests. No test-case failures or skips. Four thin command packages have no separate test files; their actual CLIs were exercised during Azure validation.
 - Tests cover disposable scope, seed preservation, index conflicts, cancellation/error propagation, malformed responses, OIDC audience/expiry, credential-safe Azure OpenAI endpoint validation, and rejected redirects. Endpoint/redirect tests use the production client wiring with an in-process transport, not an arbitrary external endpoint.
 - Full repository history was scanned with Gitleaks 8.30.1; no credential matches found. This is a scanner result, not a guarantee that every possible secret or sensitive item can be detected.
