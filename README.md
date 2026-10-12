@@ -77,6 +77,8 @@ Index parameters are small-sample defaults, **not performance tuning**: IVF `num
 
 ## Optional: a real embedding deployment
 
+The optional embedding client sends a `dimensions` parameter, so choose a deployment whose embedding model supports that parameter (for example, a `text-embedding-3` model). Older models that don't accept configurable dimensions aren't supported by this utility.
+
 Precomputed seed vectors and query embeddings must come from compatible models and dimensions. Do not merely choose a deployment with the same output length. For the pinned hotel data, confirm its source model in the [upstream data notes](https://github.com/Azure-Samples/documentdb-samples/blob/f5a2675bbf349737234d0391e3ebee24b260e06f/ai/data/README.md).
 
 ```sh

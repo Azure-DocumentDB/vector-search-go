@@ -26,6 +26,8 @@ jobs:
           cache: true
       - name: Formatting
         run: test -z "$(gofmt -l cmd internal)"
+      - name: Verify dependency checksums
+        run: go mod verify
       - name: Build
         run: go build ./...
       - name: Unit and local mock contracts (no Azure calls)
