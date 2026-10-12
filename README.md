@@ -9,7 +9,7 @@ Extracted from the [pinned Microsoft sample](https://github.com/Azure-Samples/do
 - **Precomputed vectors (`EMBEDDING_MODE=offline`)**: real database authentication, idempotent seeding, vector index creation/inspection, and nearest-neighbor queries. The query is an existing stored vector. **No model calls, no OpenAI resource, and no semantic relevance or benchmark claim.** “Offline” describes embedding generation only; the database is still a real, billable Azure service.
 - **Azure OpenAI (`EMBEDDING_MODE=azure-openai`, default)**: embeds `QUERY_TEXT` using your actual deployed model, then searches the same database. Requires a compatible embedding deployment and permission to call it. Model availability, quota, authorization, and relevance must be validated independently; passing unit tests or the precomputed-vector gate does not prove them. There is no fallback to mock embeddings.
 
-CI is local build/unit/mock validation only. It never deploys Azure resources or runs the live gate. No saved output is presented as live evidence.
+CI is local build/unit/mock validation only. It never deploys Azure resources or runs the live gate. No saved output is presented as live evidence. See [TESTED.md](TESTED.md) for the dated, real Azure M30 results in both authentication modes and the unvalidated optional model-path boundary.
 
 ## Prerequisites and safety
 
