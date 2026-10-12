@@ -13,7 +13,7 @@ CI is local build/unit/mock validation only. It never deploys Azure resources or
 
 ## Prerequisites and safety
 
-- Go **1.24.12 or newer**, Git, and Azure CLI or another [DefaultAzureCredential](https://learn.microsoft.com/azure/developer/go/sdk/authentication/credential-chains) sign-in mechanism for passwordless mode.
+- Go **1.26.9 or a newer patched release**, Git, and Azure CLI or another [DefaultAzureCredential](https://learn.microsoft.com/azure/developer/go/sdk/authentication/credential-chains) sign-in mechanism for passwordless mode.
 - An explicitly approved, **disposable** Azure DocumentDB cluster. Confirm current region/tier support and network access; HNSW/DiskANN availability depends on service tier. See [vector search documentation](https://learn.microsoft.com/azure/documentdb/vector-search).
 - For OIDC, register the correct Microsoft Entra principal with appropriate database roles on the cluster. An Azure subscription role or `az login` alone is not database authorization. [Connection/RBAC guidance](https://learn.microsoft.com/azure/documentdb/how-to-connect-role-based-access-control).
 - Explicit write permission: `VECTOR_SEARCH_ALLOW_WRITES=true`. Otherwise the search commands fail before any cloud calls.

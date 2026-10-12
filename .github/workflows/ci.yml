@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: ['1.24.12', 'stable']
+        go: ['1.26.9', 'stable']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,6 +34,8 @@ jobs:
         run: go test -race -count=1 ./...
       - name: Vet
         run: go vet ./...
+      - name: Check reachable vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
       - name: Verify live gate refuses missing opt-in
         shell: bash
         run: |
